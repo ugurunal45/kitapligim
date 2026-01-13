@@ -4,26 +4,26 @@
     <meta charset="UTF-8">
     <title>Kitap Bilgisi Hazırla</title>
     <style>
-        body { font-family: sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; }
-        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
-        button { background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; }
-        #ciktiAlani { display: none; margin-top: 20px; }
-        textarea { width: 100%; height: 80px; background: #222; color: #0f0; padding: 10px; font-family: monospace; border-radius: 5px; }
+        body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        #sonuc { display: none; margin-top: 20px; background: #f8f9fa; padding: 15px; border: 1px dashed #007bff; }
+        textarea { width: 100%; height: 80px; background: #222; color: #0f0; padding: 10px; font-family: monospace; border-radius: 5px; resize: none; }
     </style>
 </head>
 <body>
-    <h3>📖 Kitap Bilgisi Bul</h3>
-    <input type="text" id="kitapAdi" placeholder="Kitabın tam adını yazın...">
-    <button onclick="bilgiGetir()">Bilgileri Oluştur</button>
+    <h3>📖 Kitap Bul ve Kod Al</h3>
+    <input type="text" id="kitapAdi" placeholder="Kitabın adını yazın...">
+    <button onclick="hazirla()">Bilgileri Getir</button>
 
-    <div id="ciktiAlani">
-        <p>✅ Bilgiler Hazır! Aşağıdaki kodu kopyalayın:</p>
-        <textarea id="kodCiktisi" readonly></textarea>
-        <p><small>Bunu kopyalayıp <b>kitaplar.json</b> dosyasındaki parantezlerin içine yapıştırın.</small></p>
+    <div id="sonuc">
+        <p>✅ Bilgiler bulundu! Aşağıdaki kodu kopyalayın:</p>
+        <textarea id="kod"></textarea>
+        <p style="font-size: 12px; color: #666;">Not: Bu kodu kitaplar.json içindeki [ ] arasına yapıştırın. Her yeni kitaptan önce virgül koymayı unutmayın.</p>
     </div>
 
     <script>
-        async function bilgiGetir() {
+        async function hazirla() {
             const ad = document.getElementById('kitapAdi').value;
             if(!ad) return;
             const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(ad)}`);
@@ -31,13 +31,12 @@
             if(data.items) {
                 const k = data.items[0].volumeInfo;
                 const obje = {
-                    baslik: k.title,
-                    yazar: k.authors ? k.authors[0] : "Bilinmiyor",
-                    yayinevi: k.publisher || "Bilinmiyor"
+                    "baslik": k.title,
+                    "yazar": k.authors ? k.authors[0] : "Bilinmiyor",
+                    "yayinevi": k.publisher || "Bilinmiyor"
                 };
-                // Başına virgül ekleyerek kopyalamayı kolaylaştıralım
-                document.getElementById('kodCiktisi').value = JSON.stringify(obje, null, 2) + ",";
-                document.getElementById('ciktiAlani').style.display = "block";
+                document.getElementById('kod').value = JSON.stringify(obje, null, 2);
+                document.getElementById('sonuc').style.display = "block";
             } else { alert("Kitap bulunamadı!"); }
         }
     </script>
