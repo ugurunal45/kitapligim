@@ -1,35 +1,12 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <title>Kitaplığım</title>
-    <style>
-        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
-        .liste-konteynir { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
-        .kitap-satir { border-bottom: 1px solid #eee; padding: 10px 0; }
-        .yazar-yayin { color: #666; font-size: 0.9em; }
-    </style>
-</head>
-<body>
-    <div class="liste-konteynir">
-        <h2>📚 Kitap Listem</h2>
-        <div id="anaListe">Yükleniyor...</div>
-    </div>
-
-    <script>
-        fetch('kitaplar.json?v=' + Date.now())
-            .then(cevap => cevap.json())
-            .then(kitaplar => {
-                const listeDiv = document.getElementById('anaListe');
-                listeDiv.innerHTML = "";
-                kitaplar.forEach(k => {
-                    listeDiv.innerHTML += `
-                        <div class="kitap-satir">
-                            <strong>${k.baslik}</strong><br>
-                            <span class="yazar-yayin">${k.yazar} | ${k.yayinevi}</span>
-                        </div>`;
-                });
-            });
-    </script>
-</body>
-</html>
+[
+  {
+    "baslik": "Simyacımmm",
+    "yazar": "Paulo Coelho",
+    "yayinevi": "Can Yayınları"
+  },
+  {
+    "baslik": "Nutuk",
+    "yazar": "Mustafa Kemal Atatürk",
+    "yayinevi": "Yapı Kredi"
+  }
+]
