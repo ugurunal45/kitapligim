@@ -2,15 +2,18 @@
 <html>
 <head><meta charset="UTF-8"><title>Kitaplığım</title></head>
 <body>
-    <h2>Kitap Listem</h2>
-    <div id="liste"></div>
+    <h1>📚 Okuduğum Kitaplar</h1>
+    <div id="liste">Yükleniyor...</div>
     <script>
-        fetch('kitaplar.json').then(r => r.json()).then(data => {
-            const div = document.getElementById('liste');
-            data.forEach(k => {
-                div.innerHTML += `<p><b>${k.baslik}</b> - ${k.yazar} (${k.yayinevi})</p>`;
+        fetch('kitaplar.json?v=' + Date.now())
+            .then(r => r.json())
+            .then(data => {
+                const div = document.getElementById('liste');
+                div.innerHTML = data.length === 0 ? "Henüz kitap yok." : "";
+                data.forEach(k => {
+                    div.innerHTML += `<p>• <b>${k.baslik}</b> - ${k.yazar} <i>(${k.yayinevi})</i></p>`;
+                });
             });
-        });
     </script>
 </body>
 </html>
