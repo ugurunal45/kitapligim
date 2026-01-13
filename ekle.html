@@ -4,38 +4,35 @@
     <meta charset="UTF-8">
     <title>Kitap Ekle</title>
     <style>
-        body { font-family: sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
-        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
-        button { background: #007bff; color: white; cursor: pointer; border: none; font-weight: bold; }
-        #durum { padding: 10px; display: none; margin-top: 10px; border-radius: 5px; font-size: 14px; }
+        body { font-family: sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; text-align: center; }
+        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        #durum { margin-top: 20px; padding: 10px; border-radius: 5px; display: none; }
     </style>
 </head>
 <body>
     <h3>📚 Kitap Ekle</h3>
-    <input type="text" id="kitapAdi" placeholder="Kitap adı girin...">
-    <button id="anaButon" onclick="kitapEkle()">Sisteme Kaydet</button>
+    <input type="text" id="kitapInput" placeholder="Kitap adını yazın...">
+    <button onclick="sistemeEkle()">Hemen Ekle</button>
     <div id="durum"></div>
 
     <script>
-        // BURAYI KENDİ BİLGİLERİNLE DOLDUR
+        // --- BURALARI DOLDURUN ---
         const TOKEN = "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"; 
-        const USER = ugurunal45"; 
+        const USER = "ugurunal45"; 
         const REPO = "kitapligim";
 
-        async function kitapEkle() {
-            const ad = document.getElementById('kitapAdi').value;
+        async function sistemeEkle() {
+            const ad = document.getElementById('kitapInput').value;
             const durum = document.getElementById('durum');
-            const buton = document.getElementById('anaButon');
+            if(!ad) return alert("İsim yazın!");
 
-            if(!ad) return alert("Lütfen kitap adı yazın.");
-
-            buton.disabled = true;
             durum.style.display = "block";
-            durum.innerText = "⏳ İşlem yapılıyor, lütfen bekleyin...";
+            durum.innerText = "⏳ Ekleniyor...";
             durum.style.background = "#eee";
 
             try {
-                // 1. Google Books'tan Ara
+                // 1. Google'dan kitap bilgilerini çek
                 const gRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(ad)}`);
                 const gData = await gRes.json();
                 if(!gData.items) throw new Error("Kitap bulunamadı.");
@@ -47,53 +44,36 @@
                     yayinevi: k.publisher || "Bilinmiyor" 
                 };
 
-                // 2. GitHub'dan mevcut dosyayı al
+                // 2. Dosyayı GitHub'dan çek (Hata almamak için atob kullanmıyoruz)
                 const url = `https://api.github.com/repos/${USER}/${REPO}/contents/kitaplar.json`;
-                const fRes = await fetch(url, { 
-                    headers: { Authorization: `token ${TOKEN}`, "Accept": "application/vnd.github.v3+json" } 
-                });
+                const fRes = await fetch(url, { headers: { Authorization: `token ${TOKEN}` } });
                 const fData = await fRes.json();
 
-                // --- HATA ÇÖZÜMÜ BURADA ---
-                let eskiIcerik = [];
-                if (fData.content) {
-                    try {
-                        // Önce içeriği temizle ve çöz
-                        const temizIcerik = fData.content.replace(/\s/g, '');
-                        eskiIcerik = JSON.parse(decodeURIComponent(escape(window.atob(temizIcerik))));
-                    } catch (e) {
-                        console.log("Dosya boş veya bozuk, yeni liste oluşturuluyor.");
-                        eskiIcerik = [];
-                    }
-                }
-                
-                eskiIcerik.push(yeniKitap);
+                // İçeriği daha güvenli bir yöntemle çözüyoruz
+                const icerikCozulmus = decodeURIComponent(escape(atob(fData.content.replace(/\s/g, ''))));
+                const liste = JSON.parse(icerikCozulmus);
+                liste.push(yeniKitap);
 
-                // 3. GitHub'a Geri Gönder
-                const yeniB64 = window.btoa(unescape(encodeURIComponent(JSON.stringify(eskiIcerik, null, 2))));
-                
+                // 3. Dosyayı GitHub'a geri gönder
+                const yeniIcerik = btoa(unescape(encodeURIComponent(JSON.stringify(liste, null, 2))));
                 const gonderRes = await fetch(url, {
                     method: "PUT",
                     headers: { Authorization: `token ${TOKEN}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        message: `Eklendi: ${yeniKitap.baslik}`,
-                        content: yeniB64,
+                        message: "Kitap eklendi",
+                        content: yeniIcerik,
                         sha: fData.sha
                     })
                 });
 
                 if(gonderRes.ok) {
-                    durum.innerText = "✅ Başarıyla eklendi: " + yeniKitap.baslik;
+                    durum.innerText = "✅ Başarıyla Eklendi: " + yeniKitap.baslik;
                     durum.style.background = "#d4edda";
-                    document.getElementById('kitapAdi').value = "";
-                } else {
-                    throw new Error("GitHub kayıt hatası!");
+                    document.getElementById('kitapInput').value = "";
                 }
-            } catch (e) {
-                durum.innerText = "❌ Hata: " + e.message;
+            } catch (hata) {
+                durum.innerText = "❌ Hata: " + hata.message;
                 durum.style.background = "#f8d7da";
-            } finally {
-                buton.disabled = false;
             }
         }
     </script>
