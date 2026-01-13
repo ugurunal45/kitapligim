@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kitap Ekleme Paneli</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; line-height: 1.6; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #ccc; }
+        #mesaj { margin-top: 20px; padding: 10px; border-radius: 5px; display: none; }
+        .loading { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <h2>📚 Yeni Kitap Ekle</h2>
+    <p>Kitabın adını yazın, gerisini sisteme bırakın.</p>
+    
+    <input type="text" id="kitapInput" placeholder="Örn: Nutuk veya Simyacı">
+    <button id="ekleButon" onclick="kitapSureci()">Kitabı Sisteme Ekle</button>
+    
+    <div id="mesaj"></div>
+
+    <script>
+        // --- AYARLAR ---
+        const GITHUB_TOKEN = "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"; // Buraya kendi tokenini yapıştır!
+        const KULLANICI_ADI = "GITHUB_KULLANICI_ADIN"; // GitHub kullanıcı adını yaz
+        const REPO_ADI = "kitapligim";
+        const DOSYA_YOLU = "kitaplar.json";
+
+        async function kitapSureci() {
+            const kitapAdi = document.getElementById('kitapInput').value;
+            const buton = document.getElementById('ekleButon');
+            const mesajDiv = document.getElementById('mesaj');
+
+            if (!kitapAdi) return alert("Lütfen bir isim yazın.");
+
+            buton.disabled = true;
+            mesajDiv.style.display = "block";
+            mesajDiv.innerHTML = "🔍 Kitap aranıyor ve kaydediliyor...";
+            mesajDiv.style.background = "#eee";
+
+            try {
+                // 1. Google Books'tan bilgi çek
+                const googleRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${kitapAdi}`);
+                const googleData = await googleRes.json();
+
+                if (!googleData.items) throw new Error("Kitap bulunamadı.");
+
+                const info = googleData.items[0].volumeInfo;
+                const yeniKitap = {
+                    baslik: info.title,
+                    yazar: info.authors ? info.authors.join(", ") : "Bilinmiyor",
+                    yayinevi: info.publisher || "Bilinmiyor",
+                    tarih: new Date().toLocaleDateString('tr-TR')
+                };
+
+                // 2. GitHub'daki mevcut dosyayı oku (SHA değerini almak için)
+                const githubUrl = `https://api.github.com/repos/${KULLANICI_ADI}/${REPO_ADI}/contents/${DOSYA_YOLU}`;
+                const fileRes = await fetch(githubUrl, {
+                    headers: { "Authorization": `token ${GITHUB_TOKEN}` }
+                });
+                const fileData = await fileRes.json();
+                
+                // Mevcut içeriği çöz ve yeni kitabı ekle
+                const mevcutKitaplar = JSON.parse(atob(fileData.content));
+                mevcutKitaplar.push(yeniKitap);
+
+                // 3. GitHub'a geri gönder (Kaydet)
+                const updateRes = await fetch(githubUrl, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": `token ${GITHUB_TOKEN}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        message: `Yeni kitap eklendi: ${yeniKitap.baslik}`,
+                        content: btoa(unescape(encodeURIComponent(JSON.stringify(mevcutKitaplar, null, 2)))),
+                        sha: fileData.sha
+                    })
+                });
+
+                if (updateRes.ok) {
+                    mesajDiv.innerHTML = `✅ Başarıyla eklendi!<br><b>${yeniKitap.baslik}</b><br>${yeniKitap.yazar}`;
+                    mesajDiv.style.background = "#d4edda";
+                    document.getElementById('kitapInput').value = "";
+                } else {
+                    throw new Error("GitHub'a kaydedilemedi.");
+                }
+
+            } catch (hata) {
+                mesajDiv.innerHTML = "❌ Hata: " + hata.message;
+                mesajDiv.style.background = "#f8d7da";
+            } finally {
+                buton.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
