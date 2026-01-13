@@ -2,42 +2,38 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Kitap Bilgisi Hazırla</title>
+    <title>Kitap Bilgisi Bulucu</title>
     <style>
-        body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { background: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
-        #sonuc { display: none; margin-top: 20px; background: #f8f9fa; padding: 15px; border: 1px dashed #007bff; }
-        textarea { width: 100%; height: 80px; background: #222; color: #0f0; padding: 10px; font-family: monospace; border-radius: 5px; resize: none; }
+        body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 5px; border: 1px solid #ccc; }
+        button { background: #007bff; color: white; cursor: pointer; border: none; }
+        #sonuc { margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 5px; display: none; }
     </style>
 </head>
 <body>
-    <h3>📖 Kitap Bul ve Kod Al</h3>
-    <input type="text" id="kitapAdi" placeholder="Kitabın adını yazın...">
-    <button onclick="hazirla()">Bilgileri Getir</button>
+    <h3>📖 Kitap Bilgisi Sorgula</h3>
+    <input type="text" id="kInput" placeholder="Kitap adını yazın...">
+    <button onclick="bul()">Bilgileri Göster</button>
 
-    <div id="sonuc">
-        <p>✅ Bilgiler bulundu! Aşağıdaki kodu kopyalayın:</p>
-        <textarea id="kod"></textarea>
-        <p style="font-size: 12px; color: #666;">Not: Bu kodu kitaplar.json içindeki [ ] arasına yapıştırın. Her yeni kitaptan önce virgül koymayı unutmayın.</p>
+    <div id="sonuc" id="detaylar">
+        <p><strong>Başlık:</strong> <span id="t"></span></p>
+        <p><strong>Yazar:</strong> <span id="y"></span></p>
+        <p><strong>Yayınevi:</strong> <span id="p"></span></p>
+        <p><small>(Bu bilgileri elinle json dosyasına yazabilirsin)</small></p>
     </div>
 
     <script>
-        async function hazirla() {
-            const ad = document.getElementById('kitapAdi').value;
-            if(!ad) return;
+        async function bul() {
+            const ad = document.getElementById('kInput').value;
             const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(ad)}`);
             const data = await res.json();
             if(data.items) {
-                const k = data.items[0].volumeInfo;
-                const obje = {
-                    "baslik": k.title,
-                    "yazar": k.authors ? k.authors[0] : "Bilinmiyor",
-                    "yayinevi": k.publisher || "Bilinmiyor"
-                };
-                document.getElementById('kod').value = JSON.stringify(obje, null, 2);
+                const i = data.items[0].volumeInfo;
+                document.getElementById('t').innerText = i.title;
+                document.getElementById('y').innerText = i.authors ? i.authors[0] : "Bilinmiyor";
+                document.getElementById('p').innerText = i.publisher || "Bilinmiyor";
                 document.getElementById('sonuc').style.display = "block";
-            } else { alert("Kitap bulunamadı!"); }
+            } else { alert("Bulunamadı"); }
         }
     </script>
 </body>
