@@ -6,67 +6,94 @@
     <style>
         body { font-family: sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; }
         input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
-        button { background: #007bff; color: white; cursor: pointer; border: none; }
-        #durum { padding: 10px; display: none; margin-top: 10px; border-radius: 5px; }
+        button { background: #007bff; color: white; cursor: pointer; border: none; font-weight: bold; }
+        #durum { padding: 10px; display: none; margin-top: 10px; border-radius: 5px; font-size: 14px; }
     </style>
 </head>
 <body>
     <h3>📚 Kitap Ekle</h3>
     <input type="text" id="kitapAdi" placeholder="Kitap adı girin...">
-    <button onclick="kitapEkle()">Sisteme Kaydet</button>
+    <button id="anaButon" onclick="kitapEkle()">Sisteme Kaydet</button>
     <div id="durum"></div>
 
     <script>
-        const TOKEN = "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"; // Buraya ghp_ ile başlayan kodunu koy
-        const USER = "ugurunal45"; // GitHub adını yaz
+        // BURAYI KENDİ BİLGİLERİNLE DOLDUR
+        const TOKEN = "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"; 
+        const USER = ugurunal45"; 
         const REPO = "kitapligim";
 
         async function kitapEkle() {
             const ad = document.getElementById('kitapAdi').value;
             const durum = document.getElementById('durum');
-            if(!ad) return;
+            const buton = document.getElementById('anaButon');
 
+            if(!ad) return alert("Lütfen kitap adı yazın.");
+
+            buton.disabled = true;
             durum.style.display = "block";
-            durum.innerText = "İşlem yapılıyor...";
+            durum.innerText = "⏳ İşlem yapılıyor, lütfen bekleyin...";
             durum.style.background = "#eee";
 
             try {
-                // 1. Google'dan kitap bilgilerini bul
-                const gRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${ad}`);
+                // 1. Google Books'tan Ara
+                const gRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(ad)}`);
                 const gData = await gRes.json();
                 if(!gData.items) throw new Error("Kitap bulunamadı.");
                 
                 const k = gData.items[0].volumeInfo;
-                const yeni = { baslik: k.title, yazar: k.authors?.[0] || "Bilinmiyor", yayinevi: k.publisher || "Bilinmiyor" };
+                const yeniKitap = { 
+                    baslik: k.title, 
+                    yazar: k.authors ? k.authors[0] : "Bilinmiyor", 
+                    yayinevi: k.publisher || "Bilinmiyor" 
+                };
 
                 // 2. GitHub'dan mevcut dosyayı al
                 const url = `https://api.github.com/repos/${USER}/${REPO}/contents/kitaplar.json`;
-                const fRes = await fetch(url, { headers: { Authorization: `token ${TOKEN}` } });
+                const fRes = await fetch(url, { 
+                    headers: { Authorization: `token ${TOKEN}`, "Accept": "application/vnd.github.v3+json" } 
+                });
                 const fData = await fRes.json();
 
-                // HATA BURADAYDI: Daha güvenli bir yöntemle içeriği alıyoruz
-                const eskiIcerik = JSON.parse(decodeURIComponent(escape(window.atob(fData.content))));
-                eskiIcerik.push(yeni);
+                // --- HATA ÇÖZÜMÜ BURADA ---
+                let eskiIcerik = [];
+                if (fData.content) {
+                    try {
+                        // Önce içeriği temizle ve çöz
+                        const temizIcerik = fData.content.replace(/\s/g, '');
+                        eskiIcerik = JSON.parse(decodeURIComponent(escape(window.atob(temizIcerik))));
+                    } catch (e) {
+                        console.log("Dosya boş veya bozuk, yeni liste oluşturuluyor.");
+                        eskiIcerik = [];
+                    }
+                }
+                
+                eskiIcerik.push(yeniKitap);
 
-                // 3. GitHub'a yeni listeyi gönder
+                // 3. GitHub'a Geri Gönder
+                const yeniB64 = window.btoa(unescape(encodeURIComponent(JSON.stringify(eskiIcerik, null, 2))));
+                
                 const gonderRes = await fetch(url, {
                     method: "PUT",
                     headers: { Authorization: `token ${TOKEN}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        message: "Yeni kitap",
-                        content: window.btoa(unescape(encodeURIComponent(JSON.stringify(eskiIcerik)))),
+                        message: `Eklendi: ${yeniKitap.baslik}`,
+                        content: yeniB64,
                         sha: fData.sha
                     })
                 });
 
                 if(gonderRes.ok) {
-                    durum.innerText = "✅ Eklendi: " + yeni.baslik;
+                    durum.innerText = "✅ Başarıyla eklendi: " + yeniKitap.baslik;
                     durum.style.background = "#d4edda";
                     document.getElementById('kitapAdi').value = "";
+                } else {
+                    throw new Error("GitHub kayıt hatası!");
                 }
             } catch (e) {
                 durum.innerText = "❌ Hata: " + e.message;
                 durum.style.background = "#f8d7da";
+            } finally {
+                buton.disabled = false;
             }
         }
     </script>
