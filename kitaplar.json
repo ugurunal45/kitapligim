@@ -1,7 +1,12 @@
 [
   {
-    "baslik": "Örnek Kitap",
-    "yazar": "Yazar Adı",
-    "yayinevi": "Yayınevi Adı"
+    "baslik": "Simyacı",
+    "yazar": "Paulo Coelho",
+    "yayinevi": "Can Yayınları"
+  },
+  {
+    "baslik": "Nutuk",
+    "yazar": "Mustafa Kemal Atatürk",
+    "yayinevi": "Yapı Kredi"
   }
 ]
