@@ -2,79 +2,43 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Kitap Ekle</title>
+    <title>Kitap Bilgisi Hazırla</title>
     <style>
-        body { font-family: sans-serif; max-width: 400px; margin: 50px auto; padding: 20px; text-align: center; }
-        input { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        #durum { margin-top: 20px; padding: 10px; border-radius: 5px; display: none; }
+        body { font-family: sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+        button { background: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; }
+        #ciktiAlani { display: none; margin-top: 20px; }
+        textarea { width: 100%; height: 80px; background: #222; color: #0f0; padding: 10px; font-family: monospace; border-radius: 5px; }
     </style>
 </head>
 <body>
-    <h3>📚 Kitap Ekle</h3>
-    <input type="text" id="kitapInput" placeholder="Kitap adını yazın...">
-    <button onclick="sistemeEkle()">Hemen Ekle</button>
-    <div id="durum"></div>
+    <h3>📖 Kitap Bilgisi Bul</h3>
+    <input type="text" id="kitapAdi" placeholder="Kitabın tam adını yazın...">
+    <button onclick="bilgiGetir()">Bilgileri Oluştur</button>
+
+    <div id="ciktiAlani">
+        <p>✅ Bilgiler Hazır! Aşağıdaki kodu kopyalayın:</p>
+        <textarea id="kodCiktisi" readonly></textarea>
+        <p><small>Bunu kopyalayıp <b>kitaplar.json</b> dosyasındaki parantezlerin içine yapıştırın.</small></p>
+    </div>
 
     <script>
-        // --- BURALARI DOLDURUN ---
-        const TOKEN = "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"; 
-        const USER = "ugurunal45"; 
-        const REPO = "kitapligim";
-
-        async function sistemeEkle() {
-            const ad = document.getElementById('kitapInput').value;
-            const durum = document.getElementById('durum');
-            if(!ad) return alert("İsim yazın!");
-
-            durum.style.display = "block";
-            durum.innerText = "⏳ Ekleniyor...";
-            durum.style.background = "#eee";
-
-            try {
-                // 1. Google'dan kitap bilgilerini çek
-                const gRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(ad)}`);
-                const gData = await gRes.json();
-                if(!gData.items) throw new Error("Kitap bulunamadı.");
-                
-                const k = gData.items[0].volumeInfo;
-                const yeniKitap = { 
-                    baslik: k.title, 
-                    yazar: k.authors ? k.authors[0] : "Bilinmiyor", 
-                    yayinevi: k.publisher || "Bilinmiyor" 
+        async function bilgiGetir() {
+            const ad = document.getElementById('kitapAdi').value;
+            if(!ad) return;
+            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(ad)}`);
+            const data = await res.json();
+            if(data.items) {
+                const k = data.items[0].volumeInfo;
+                const obje = {
+                    baslik: k.title,
+                    yazar: k.authors ? k.authors[0] : "Bilinmiyor",
+                    yayinevi: k.publisher || "Bilinmiyor"
                 };
-
-                // 2. Dosyayı GitHub'dan çek (Hata almamak için atob kullanmıyoruz)
-                const url = `https://api.github.com/repos/${USER}/${REPO}/contents/kitaplar.json`;
-                const fRes = await fetch(url, { headers: { Authorization: `token ${TOKEN}` } });
-                const fData = await fRes.json();
-
-                // İçeriği daha güvenli bir yöntemle çözüyoruz
-                const icerikCozulmus = decodeURIComponent(escape(atob(fData.content.replace(/\s/g, ''))));
-                const liste = JSON.parse(icerikCozulmus);
-                liste.push(yeniKitap);
-
-                // 3. Dosyayı GitHub'a geri gönder
-                const yeniIcerik = btoa(unescape(encodeURIComponent(JSON.stringify(liste, null, 2))));
-                const gonderRes = await fetch(url, {
-                    method: "PUT",
-                    headers: { Authorization: `token ${TOKEN}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        message: "Kitap eklendi",
-                        content: yeniIcerik,
-                        sha: fData.sha
-                    })
-                });
-
-                if(gonderRes.ok) {
-                    durum.innerText = "✅ Başarıyla Eklendi: " + yeniKitap.baslik;
-                    durum.style.background = "#d4edda";
-                    document.getElementById('kitapInput').value = "";
-                }
-            } catch (hata) {
-                durum.innerText = "❌ Hata: " + hata.message;
-                durum.style.background = "#f8d7da";
-            }
+                // Başına virgül ekleyerek kopyalamayı kolaylaştıralım
+                document.getElementById('kodCiktisi').value = JSON.stringify(obje, null, 2) + ",";
+                document.getElementById('ciktiAlani').style.display = "block";
+            } else { alert("Kitap bulunamadı!"); }
         }
     </script>
 </body>
