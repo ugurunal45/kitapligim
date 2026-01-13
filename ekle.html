@@ -63,9 +63,9 @@
                 });
                 const fileData = await fileRes.json();
                 
-                // Mevcut içeriği çöz ve yeni kitabı ekle
-                const mevcutKitaplar = JSON.parse(atob(fileData.content));
-                mevcutKitaplar.push(yeniKitap);
+                // Veri varsa çöz, yoksa boş liste oluştur
+let icerik = fileData.content ? decodeURIComponent(escape(atob(fileData.content))) : "[]";
+const mevcutKitaplar = JSON.parse(icerik);
 
                 // 3. GitHub'a geri gönder (Kaydet)
                 const updateRes = await fetch(githubUrl, {
