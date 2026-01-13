@@ -2,38 +2,68 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>Kitap Bilgisi Bulucu</title>
+    <title>Kitap Bilgisi Hazırla</title>
     <style>
-        body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
-        input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 5px; border: 1px solid #ccc; }
-        button { background: #007bff; color: white; cursor: pointer; border: none; }
-        #sonuc { margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 5px; display: none; }
+        body { font-family: 'Segoe UI', sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; border: 1px solid #ddd; border-radius: 12px; background-color: #fcfcfc; }
+        h3 { color: #333; text-align: center; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        #sonucAlani { display: none; margin-top: 20px; padding: 15px; background: #fff; border: 1px solid #007bff; border-left: 5px solid #007bff; border-radius: 4px; }
+        pre { background: #2d2d2d; color: #ccc; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 13px; }
+        .kopyala-not { font-size: 12px; color: #666; margin-top: 10px; line-height: 1.4; }
     </style>
 </head>
 <body>
-    <h3>📖 Kitap Bilgisi Sorgula</h3>
-    <input type="text" id="kInput" placeholder="Kitap adını yazın...">
-    <button onclick="bul()">Bilgileri Göster</button>
 
-    <div id="sonuc" id="detaylar">
-        <p><strong>Başlık:</strong> <span id="t"></span></p>
-        <p><strong>Yazar:</strong> <span id="y"></span></p>
-        <p><strong>Yayınevi:</strong> <span id="p"></span></p>
-        <p><small>(Bu bilgileri elinle json dosyasına yazabilirsin)</small></p>
+    <h3>📖 Kitap Bilgisi Bulucu</h3>
+    <p style="text-align:center; color:#666; font-size:14px;">Kitap adını yazın, JSON kodunu kopyalayın.</p>
+    
+    <input type="text" id="kitapAdi" placeholder="Örn: Suç ve Ceza">
+    <button onclick="bilgileriGetir()">Bilgileri Hazırla</button>
+
+    <div id="sonucAlani">
+        <strong>✅ Bilgiler Hazır!</strong>
+        <p style="font-size:14px;">Aşağıdaki kodu kopyalayıp <code>kitaplar.json</code> dosyasına yapıştırın:</p>
+        <pre id="ciktiKodu"></pre>
+        <div class="kopyala-not">
+            <b>Nasıl Yapılır?</b><br>
+            1. Yukarıdaki kodu kopyalayın.<br>
+            2. GitHub'daki <code>kitaplar.json</code> dosyasını açın.<br>
+            3. Köşeli parantezlerin <code>[ ]</code> içine yapıştırın.<br>
+            4. Eğer başka kitap varsa, araya <b>virgül (,)</b> koymayı unutmayın.
+        </div>
     </div>
 
     <script>
-        async function bul() {
-            const ad = document.getElementById('kInput').value;
-            const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(ad)}`);
-            const data = await res.json();
-            if(data.items) {
-                const i = data.items[0].volumeInfo;
-                document.getElementById('t').innerText = i.title;
-                document.getElementById('y').innerText = i.authors ? i.authors[0] : "Bilinmiyor";
-                document.getElementById('p').innerText = i.publisher || "Bilinmiyor";
-                document.getElementById('sonuc').style.display = "block";
-            } else { alert("Bulunamadı"); }
+        async function bilgileriGetir() {
+            const ad = document.getElementById('kitapAdi').value;
+            const sonuc = document.getElementById('sonucAlani');
+            const kod = document.getElementById('ciktiKodu');
+
+            if(!ad) { alert("Lütfen bir kitap adı girin!"); return; }
+
+            try {
+                const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(ad)}`);
+                const data = await res.json();
+
+                if(data.items && data.items.length > 0) {
+                    const k = data.items[0].volumeInfo;
+                    const kitapObjesi = {
+                        "baslik": k.title,
+                        "yazar": k.authors ? k.authors[0] : "Bilinmiyor",
+                        "yayinevi": k.publisher || "Bilinmiyor"
+                    };
+
+                    // Kodu ekranda göster ve kopyalamayı kolaylaştır
+                    kod.innerText = JSON.stringify(kitapObjesi, null, 2);
+                    sonuc.style.display = "block";
+                } else {
+                    alert("Kitap bulunamadı. Lütfen adı kontrol edin.");
+                }
+            } catch (hata) {
+                alert("Bir hata oluştu. İnternet bağlantınızı kontrol edin.");
+            }
         }
     </script>
 </body>
