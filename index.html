@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kitaplığım</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        .ara-kutu { width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 5px; border: 1px solid #ddd; }
+        .kart { background: white; padding: 15px; margin-bottom: 10px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .yazar { color: #666; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <h2>📚 Kitap Listesi</h2>
+    <input type="text" id="arama" class="ara-kutu" placeholder="Kitap veya yazar ara..." onkeyup="listele()">
+    <div id="liste">Yükleniyor...</div>
+
+    <script>
+        let tumKitaplar = [];
+
+        async function verileriGetir() {
+            const res = await fetch('kitaplar.json?v=' + Date.now());
+            tumKitaplar = await res.json();
+            listele();
+        }
+
+        function listele() {
+            const araText = document.getElementById('arama').value.toLowerCase();
+            const listeDiv = document.getElementById('liste');
+            listeDiv.innerHTML = "";
+
+            const suzulenler = tumKitaplar.filter(k => 
+                k.baslik.toLowerCase().includes(araText) || 
+                k.yazar.toLowerCase().includes(araText)
+            );
+
+            suzulenler.forEach(k => {
+                listeDiv.innerHTML += `
+                    <div class="kart">
+                        <strong>${k.baslik}</strong><br>
+                        <span class="yazar">${k.yazar} - ${k.yayinevi}</span>
+                    </div>
+                `;
+            });
+        }
+        verileriGetir();
+    </script>
+</body>
+</html>
